@@ -705,6 +705,7 @@ static efi_status_t exit_boot_func(efi_system_table_t *sys_table_arg,
 static inline efi_status_t exit_boot(struct boot_params *boot_params,
 				     void *handle)
 {
+	efi_printk(sys_table, "Something called exit_boot but we're here without it.\n");
 	return EFI_SUCCESS;
 }
 #else
@@ -823,6 +824,7 @@ efi_main(struct efi_config *c, struct boot_params *boot_params)
 	}
 
 	if (!IS_ENABLED(CONFIG_ARCH_EFI)) {
+		efi_printk(sys_table, "This is code that shouldn't be run on ARCH=efi\n");
 		/*
 		 * If the kernel isn't already loaded at the preferred load
 		 * address, relocate it.
