@@ -972,28 +972,32 @@ static void __init __efi_enter_virtual_mode(void)
 
 	efi_sync_low_kernel_mappings();
 
-	if (efi_is_native()) {
-		status = phys_efi_set_virtual_address_map(
-				efi.memmap.desc_size * count,
-				efi.memmap.desc_size,
-				efi.memmap.desc_version,
-				(efi_memory_desc_t *)pa);
+	if (IS_ENABLED(CONFIG_ARCH_EFI)) {
+		pr_info("TODO: pick better virtual addresses\n");
 	} else {
-		status = efi_thunk_set_virtual_address_map(
-				efi_phys.set_virtual_address_map,
-				efi.memmap.desc_size * count,
-				efi.memmap.desc_size,
-				efi.memmap.desc_version,
-				(efi_memory_desc_t *)pa);
-	}
+		if (efi_is_native()) {
+			status = phys_efi_set_virtual_address_map(
+					efi.memmap.desc_size * count,
+					efi.memmap.desc_size,
+					efi.memmap.desc_version,
+					(efi_memory_desc_t *)pa);
+		} else {
+			status = efi_thunk_set_virtual_address_map(
+					efi_phys.set_virtual_address_map,
+					efi.memmap.desc_size * count,
+					efi.memmap.desc_size,
+					efi.memmap.desc_version,
+					(efi_memory_desc_t *)pa);
+		}
 
-	if (status != EFI_SUCCESS) {
-		pr_alert("Unable to switch EFI into virtual mode (status=%lx)!\n",
-			 status);
-		panic("EFI call to SetVirtualAddressMap() failed!");
-	}
+		if (status != EFI_SUCCESS) {
+			pr_alert("Unable to switch EFI into virtual mode (status=%lx)!\n",
+				 status);
+			panic("EFI call to SetVirtualAddressMap() failed!");
+		}
 
-	efi_free_boot_services();
+		efi_free_boot_services();
+	}
 
 	/*
 	 * Now that EFI is in virtual mode, update the function
