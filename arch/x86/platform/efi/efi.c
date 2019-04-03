@@ -1051,3 +1051,13 @@ static int __init arch_parse_efi_cmdline(char *str)
 	return 0;
 }
 early_param("efi", arch_parse_efi_cmdline);
+
+#ifdef CONFIG_ARCH_EFI
+static void __init efi_start_bs_thread(void)
+{
+  BUG_ON(!efi.systab);
+  efi_bs_init(efi.systab);
+}
+
+device_initcall(efi_start_bs_thread);
+#endif
