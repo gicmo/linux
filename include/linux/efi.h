@@ -1796,4 +1796,8 @@ struct linux_efi_memreserve {
 #define EFI_MEMRESERVE_COUNT(size) (((size) - sizeof(struct linux_efi_memreserve)) \
 	/ sizeof(((struct linux_efi_memreserve *)0)->entry[0]))
 
+#ifdef CONFIG_ARCH_EFI
+int efi_bs_init(efi_system_table_t *systab);
+#endif
+
 #endif /* _LINUX_EFI_H */
