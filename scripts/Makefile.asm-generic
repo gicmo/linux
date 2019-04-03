@@ -13,7 +13,7 @@ src := $(subst /generated,,$(obj))
 -include $(src)/Kbuild
 
 # $(generic)/Kbuild lists mandatory-y. Exclude um since it is a special case.
-ifneq ($(SRCARCH),um)
+ifneq ($($(filter-out $(filter-out $(SRCARCH),um),efi)),)
 include $(generic)/Kbuild
 endif
 
