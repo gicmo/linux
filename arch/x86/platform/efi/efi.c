@@ -1052,6 +1052,32 @@ static int __init arch_parse_efi_cmdline(char *str)
 }
 early_param("efi", arch_parse_efi_cmdline);
 
+
+static void __init efi_char16_printk_stp(efi_char16_t *str)
+{
+	BUG_ON(!efi.systab);
+
+	efi_call(efi.systab->con_out->output_string, str);
+}
+
+void __init efi_printk_stp(char *str)
+{
+	/* c&p from efi_printk */
+	char *s8;
+
+	for (s8 = str; *s8; s8++) {
+		efi_char16_t ch[2] = { 0 };
+
+		ch[0] = *s8;
+		if (*s8 == '\n') {
+			efi_char16_t nl[2] = { '\r', 0 };
+			efi_char16_printk_stp(nl);
+		}
+
+		efi_char16_printk_stp(ch);
+	}
+}
+
 #ifdef CONFIG_ARCH_EFI
 static void __init efi_start_bs_thread(void)
 {
