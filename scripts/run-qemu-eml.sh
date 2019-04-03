@@ -87,6 +87,13 @@ assert_exists /usr/share/OVMF/UefiShell.iso
 cp /usr/share/OVMF/OVMF_VARS.fd eml_VARS.fd
 
 imgsize="$(add $(align_up $(align_up $(size arch/x86/boot/bzImage) $(blksize arch/x86/boot/bzImage)) 2097152) 1048576)"
+if [ -f initramfs.cpio.gz ]; then
+    initramfs=initramfs.cpio.gz
+    initrdsz="$(add $(align_up $(align_up $(size $initramfs) $(blksize $initramfs)) 2097152) 1048576)"
+    imgsize="$(add ${imgsize} ${initrdsz})"
+else
+    initramfs="" || :
+fi
 qemu-img create -f raw eml.img "${imgsize}" >/dev/null
 cat <<EOF | parted eml.img >/dev/null 2>&1
 unit b
@@ -100,9 +107,13 @@ sudo mkfs.vfat "/dev/mapper/${part}" >/dev/null
 mkdir eml
 sudo mount -o uid="${UID}" "/dev/mapper/${part}" eml
 cp arch/x86/boot/bzImage eml/
+if [ -f initramfs.cpio.gz ]; then
+    cp initramfs.cpio.gz eml/
+    initramfs="initrd=${initramfs}"
+fi
 cat <<EOF | iconv -t 'UCS-2LE' | unix2dos -ul -u -m > eml/startup.nsh
 fs1:
-bzImage console=ttyS0 console=tty0 earlyprintk=efi,serial efi=debug
+bzImage console=ttyS0 console=tty0 earlyprintk=efi,serial efi=debug ${initramfs} root=/dev/root
 EOF
 sudo umount eml
 rmdir eml
@@ -146,6 +157,7 @@ qemu-system-x86_64 \
         -device virtio-rng-pci,rng=objrng0,id=rng0,bus=pci.5,addr=0x0 \
     -sandbox on,obsolete=deny,elevateprivileges=deny,spawn=deny,resourcecontrol=deny \
     -msg timestamp=on \
+    -chardev pty,id=charserial0 -device isa-serial,chardev=charserial0,id=serial0 \
     -serial file:eml.log
 
 cleanup
