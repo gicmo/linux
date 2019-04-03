@@ -749,6 +749,8 @@ typedef struct {
 #define EFI_1_10_SYSTEM_TABLE_REVISION  ((1 << 16) | (10))
 #define EFI_1_02_SYSTEM_TABLE_REVISION  ((1 << 16) | (02))
 
+typedef struct efi_simple_text_output_protocol efi_simple_text_output_protocol;
+
 typedef struct {
 	efi_table_hdr_t hdr;
 	u64 fw_vendor;	/* physical addr of CHAR16 vendor string */
@@ -790,7 +792,7 @@ typedef struct {
 	unsigned long con_in_handle;
 	unsigned long con_in;
 	unsigned long con_out_handle;
-	unsigned long con_out;
+	efi_simple_text_output_protocol *con_out;
 	unsigned long stderr_handle;
 	unsigned long stderr;
 	efi_runtime_services_t *runtime;
