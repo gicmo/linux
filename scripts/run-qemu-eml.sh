@@ -158,7 +158,8 @@ qemu-system-x86_64 \
     -sandbox on,obsolete=deny,elevateprivileges=deny,spawn=deny,resourcecontrol=deny \
     -msg timestamp=on \
     -chardev pty,id=charserial0 -device isa-serial,chardev=charserial0,id=serial0 \
-    -serial file:eml.log
+    -serial file:eml.log \
+    -s
 
 cleanup
 
