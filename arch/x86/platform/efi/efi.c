@@ -973,7 +973,7 @@ static void __init __efi_enter_virtual_mode(void)
 	efi_sync_low_kernel_mappings();
 
 	if (IS_ENABLED(CONFIG_ARCH_EFI)) {
-		pr_info("TODO: pick better virtual addresses\n");
+		printk("TODO: pick better virtual addresses\n");
 	} else {
 		if (efi_is_native()) {
 			status = phys_efi_set_virtual_address_map(
