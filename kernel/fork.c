@@ -1695,12 +1695,77 @@ static int pidfd_release(struct inode *inode, struct file *file)
 }
 
 #ifdef CONFIG_PROC_FS
+/**
+ * pidfd_show_fdinfo - print information about a pidfd
+ * @m: proc fdinfo file
+ * @f: file referencing a pidfd
+ *
+ * Pid:
+ * This function will print the pid a given pidfd refers to in the pid
+ * namespace of the opener's procfs instance.
+ * If the pid namespace of the process is not a descendant of the pid
+ * namespace of the procfs instance 0 will be shown as its pid. This is
+ * similar to calling getppid() on a process who's parent is out of it's
+ * pid namespace (e.g. when moving a process into a sibling pid namespace
+ * via setns()).
+ *
+ * NSpid:
+ * If pid namespaces are supported then this function will also print the
+ * pid a given pidfd refers to for all descendant pid namespaces starting
+ * from the current pid namespace of the opener's procfs instance, i.e. the
+ * first pid entry for Pid and NSpid will be identical.
+ * If the pid namespace of the process is not a descendant of the pid
+ * namespace of the procfs instance 0 will be shown as its first NSpid and
+ * no other NSpid entries will be shown.
+ * Note that this differs from the Pid and NSpid fields in
+ * /proc/<pid>/status where Pid and NSpid are always shown relative to the
+ * pid namespace of the opener's procfs instance. The difference becomes
+ * obvious when sending around a pidfd between pid namespaces from a
+ * different branch of the tree, i.e. where no ancestoral relation is present
+ * between the pid namespaces:
+ * 1. sending around pidfd:
+ * - create two new pid namespaces ns1 and ns2 in the initial pid namespace
+ *   (also take care to create new mount namespaces in the new pid
+ *   namespace and mount procfs.)
+ * - create a process with a pidfd in ns1
+ * - send pidfd from ns1 to ns2
+ * - read /proc/self/fdinfo/<pidfd> and observe that Pid and NSpid entries
+ *   are 0
+ * 2. sending around /proc/<pid>/status fd:
+ * - create two new pid namespaces ns1 and ns2 in the initial pid namespace
+ *   (Also take care to create new mount namespaces in the new pid
+ *   namespace and mount procfs.)
+ * - create a process in ns1
+ * - open /proc/<pid>/status in the initial pid namespace for the process
+ *   you created in ns1
+ * - send statusfd from initial pid namespace to ns2
+ * - read statusfd and observe:
+ *   - that Pid will contain the pid of the process as seen from the init
+ *   - that NSpid will contain the pids of the process for all descendant
+ *     pid namespaces starting from the initial pid namespace
+ */
 static void pidfd_show_fdinfo(struct seq_file *m, struct file *f)
 {
 	struct pid_namespace *ns = proc_pid_ns(file_inode(m->file));
 	struct pid *pid = f->private_data;
+	pid_t nr = pid_nr_ns(pid, ns);
 
-	seq_put_decimal_ull(m, "Pid:\t", pid_nr_ns(pid, ns));
+	seq_put_decimal_ull(m, "Pid:\t", nr);
+
+#ifdef CONFIG_PID_NS
+	seq_put_decimal_ull(m, "\nNSpid:\t", nr);
+	if (nr) {
+		int i;
+
+		/* If nr is non-zero it means that 'pid' is valid and that
+		 * ns, i.e. the pid namespace associated with the procfs
+		 * instance, is in the pid namespace hierarchy of pid.
+		 * Start at one below the already printed level.
+		 */
+		for (i = ns->level + 1; i <= pid->level; i++)
+			seq_put_decimal_ull(m, "\t", pid->numbers[i].nr);
+	}
+#endif
 	seq_putc(m, '\n');
 }
 #endif
